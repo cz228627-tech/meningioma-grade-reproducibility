@@ -1,7 +1,7 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
-ä¸¥æ ¼æ¯”è¾ƒï¼š|Î”| vs |t| vs ä¸‹ç½®ä¿¡ç•Œ
-é…å¯¹ bootstrapï¼ˆæ‚£è€…çº§ï¼Œä¸¤é˜Ÿåˆ—åŒæ—¶é‡æŠ½æ ·ï¼‰ç»™å‡ºç­–ç•¥é—´å·®å€¼çš„ CI
+Strict comparison of |delta| vs |t| vs the lower confidence bound.
+Paired bootstrap (patients resampled in both cohorts) gives CIs for between-strategy differences.
 """
 import sys, os, re, gzip
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -116,12 +116,12 @@ dd = d_d[[didx[g] for g in common]]
 dt = d_t[[didx[g] for g in common]]
 dse = d_se[[didx[g] for g in common]]
 me = mean_exp[[didx[g] for g in common]]
-print("å…±åŒåŸºå› :", len(common))
+print("Common genes:", len(common))
 
 e1 = A1[:, gv1 >= 2].mean(1) - A1[:, gv1 == 1].mean(1)
 e2 = A2[:, gv2 >= 2].mean(1) - A2[:, gv2 == 1].mean(1)
 valid = np.isfinite(e1) & np.isfinite(e2)
-print("ä¸¤é˜Ÿåˆ—å‡æœ‰æœ‰æ•ˆæ•ˆåº”:", int(valid.sum()))
+print("Genes with finite effects in both cohorts:", int(valid.sum()))
 
 SCORES = {"A_absDelta": np.abs(dd), "B_absT": np.abs(dt),
           "C_shrunk": np.maximum(np.abs(dd) - 1.96 * dse, 0)}

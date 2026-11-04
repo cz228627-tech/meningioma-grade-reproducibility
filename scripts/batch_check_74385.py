@@ -1,5 +1,5 @@
-﻿# -*- coding: utf-8 -*-
-"""GSE74385 æ‰¹æ¬¡ Ã— åˆ†çº§ æ··æ‚æ£€æŸ¥ + åˆ†å±‚ç½®æ¢ + æ‰¹æ¬¡æ ¡æ­£åŽçš„æ•ˆåº”"""
+# -*- coding: utf-8 -*-
+"""GSE74385: grade x batch structure check, within-batch permutation, and batch-adjusted effects."""
 import sys, os, re, gzip, json
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 import numpy as np
@@ -55,17 +55,17 @@ keep = ~isM
 
 gv = grade[keep]
 bt = batch[keep]
-print("=== 53 ä¾‹ï¼ˆå‰”é™¤ Mï¼‰åˆ†çº§ Ã— æ‰¹æ¬¡ ===")
+print("=== 53 samples (M-prefixed excluded) by grade x batch ===")
 tab = pd.crosstab(pd.Series(bt, name="batch"), pd.Series(gv, name="grade"))
 print(tab.to_string())
-print("\næ¯æ‰¹å†…æ˜¯å¦æœ‰åˆ†çº§å˜å¼‚:")
+print("\nGrade variation within each batch:")
 for b in sorted(set(bt)):
     gs = sorted(set(gv[bt == b]))
     n1 = int(((bt == b) & (gv == 1)).sum())
     n23 = int(((bt == b) & (gv >= 2)).sum())
-    print(f"  æ‰¹æ¬¡ {b}: G1={n1:2d} G2+3={n23:2d} | åˆ†çº§å±‚æ¬¡ {gs}")
+    print(f"  batch {b}: G1={n1:2d} G2+3={n23:2d} | grades present {gs}")
 
-# çŸ©é˜µ
+# design matrix
 p2g = platform("GPL10558.annot.gz")
 V = np.array([[float(x) if x.strip('"') not in ("", "NA", "null") else np.nan for x in r[1:]]
               for r in rows[1:]], dtype=float)[:, keep]
@@ -81,7 +81,7 @@ genes = list(kmap)
 ridx = np.array([kmap[g] for g in genes])
 X = V[ridx]
 
-# å‘çŽ°é˜Ÿåˆ—
+# discovery cohort
 ddf = pd.read_csv(os.path.join(OUT, "GSE183653_meningioma_tpm.csv.gz"), index_col=0)
 ch2, t2 = [], []
 with gzip.open(os.path.join(OUT, "RNA_GSE183653.txt.gz"), "rt", encoding="utf-8", errors="replace") as f:
@@ -119,12 +119,12 @@ def run(Xin, label):
     qidx = [idx[ql == q] for q in range(5)]
     obs = np.array([np.mean(np.sign(ev[ix]) == np.sign(ed_s[ix])) for ix in qidx])
     stat = float(W @ obs)
-    # å…¨å±€ç½®æ¢
+    # global label permutation
     glob = np.empty(NPERM)
     for b in range(NPERM):
         e = eff(Xin, rng.permutation(gv))[vi]
         glob[b] = W @ np.array([np.mean(np.sign(e[ix]) == np.sign(ed_s[ix])) for ix in qidx])
-    # æ‰¹æ¬¡å†…åˆ†å±‚ç½®æ¢
+    # within-batch stratified permutation
     strata = np.empty(NPERM)
     for b in range(NPERM):
         gp = gv.copy()
@@ -133,25 +133,25 @@ def run(Xin, label):
             gp[m] = rng.permutation(gv[m])
         e = eff(Xin, gp)[vi]
         strata[b] = W @ np.array([np.mean(np.sign(e[ix]) == np.sign(ed_s[ix])) for ix in qidx])
-    print(f"\n[{label}] åˆ†ä½ä¸€è‡´çŽ‡ {[round(100*x,2) for x in obs]}")
-    print(f"  è¶‹åŠ¿ç»Ÿè®¡é‡ {stat:+.4f}")
-    print(f"  å…¨å±€ç½®æ¢:   é›¶ {glob.mean():+.4f}Â±{glob.std():.4f} | p={(np.sum(glob>=stat)+1)/(NPERM+1):.4f}")
-    print(f"  æ‰¹æ¬¡å†…ç½®æ¢: é›¶ {strata.mean():+.4f}Â±{strata.std():.4f} | p={(np.sum(strata>=stat)+1)/(NPERM+1):.4f}")
+    print(f"\n[{label}] quintile concordance {[round(100*x,2) for x in obs]}")
+    print(f"  trend statistic {stat:+.4f}")
+    print(f"  global permutation:  null {glob.mean():+.4f}+/-{glob.std():.4f} | p={(np.sum(glob>=stat)+1)/(NPERM+1):.4f}")
+    print(f"  within-batch perm.:  null {strata.mean():+.4f}+/-{strata.std():.4f} | p={(np.sum(strata>=stat)+1)/(NPERM+1):.4f}")
     return dict(obs=[round(100 * x, 2) for x in obs], stat=round(stat, 4),
                 p_global=round(float((np.sum(glob >= stat) + 1) / (NPERM + 1)), 4),
                 p_strat=round(float((np.sum(strata >= stat) + 1) / (NPERM + 1)), 4))
 
 
 res = {}
-res["unadjusted"] = run(X, "æœªæ ¡æ­£æ‰¹æ¬¡")
+res["unadjusted"] = run(X, "batch-unadjusted")
 
-# æ‰¹æ¬¡æ ¡æ­£ï¼šæ¯ä¸ªåŸºå› å‡åŽ»æ‰¹æ¬¡å‡å€¼
+# batch adjustment: subtract each gene's within-batch mean
 Xa = X.copy()
 for bb in sorted(set(bt)):
     m = bt == bb
     if m.sum() > 1:
         Xa[:, m] = X[:, m] - np.nanmean(X[:, m], axis=1, keepdims=True)
-res["batch_adjusted"] = run(Xa, "æ‰¹æ¬¡æ ¡æ­£åŽ")
+res["batch_adjusted"] = run(Xa, "batch-adjusted")
 
 print("\n" + json.dumps(res, ensure_ascii=False, indent=2))
 

@@ -1,7 +1,7 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
-fig3_frozen.py â€” å”¯ä¸€æƒå¨è¾“å‡ºï¼ˆä¸€æ¬¡è¿è¡Œäº§å‡ºæ‰€æœ‰æ•°å­—ï¼‰
-åŒæ—¶ä¿å­˜ï¼šäº”åˆ†ä½ä¸€è‡´çŽ‡ã€é›¶åˆ†å¸ƒã€ç½®æ¢ pã€BH qã€bootstrap CIã€è¶‹åŠ¿ç»Ÿè®¡é‡
+fig3_frozen.py - single authoritative output (one run produces every reported number)
+Saves quintile concordance, empirical null, permutation p, BH q, bootstrap CI and trend statistic.
 """
 import sys, os, re, gzip, json
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -25,7 +25,7 @@ def bh(p):
     out = np.empty(n); out[o] = np.clip(q, 0, 1); return out
 
 
-# --- å‘çŽ°é˜Ÿåˆ— ---
+# --- discovery cohort ---
 ddf = pd.read_csv(os.path.join(OUT, "GSE183653_meningioma_tpm.csv.gz"), index_col=0)
 ch, t2 = [], []
 with gzip.open(os.path.join(OUT, "RNA_GSE183653.txt.gz"), "rt", encoding="utf-8", errors="replace") as f:
@@ -114,8 +114,8 @@ for name, X, keep, gv in [("GSE16581", V1, keep1, gv1), ("GSE74385", V2, keep2, 
     ev_s, ed_s = ev[vi], ed[di]
     fin = np.isfinite(ev_s) & np.isfinite(ed_s)
     n_nonfinite = int((~fin).sum())
-    # å…³é”®å®šä¹‰ï¼šå‘çŽ°é˜Ÿåˆ—æ•ˆåº”æ°å¥½ä¸º 0 çš„åŸºå› æ²¡æœ‰æ–¹å‘ä¿¡æ¯ï¼Œå…ˆå‰”é™¤å†åˆ’åˆ†äº”åˆ†ä½ï¼ˆæ–¹æ¡ˆ Aï¼‰
-    # è¯¥æŽ’é™¤åªä¾èµ–å‘çŽ°é˜Ÿåˆ—ï¼Œç½®æ¢ä¸­æ’å®šä¸å˜
+    # Key definition: genes with an exactly zero discovery effect carry no direction and are
+    # excluded before quintiles are built (option A). The exclusion depends only on the discovery
     n_zero = int((ed_s[fin] == 0).sum())
     fin = fin & (ed_s != 0)
     absd = np.abs(ed_s[fin]); edges = np.quantile(absd, [0, .2, .4, .6, .8, 1.0])
@@ -151,11 +151,11 @@ for name, X, keep, gv in [("GSE16581", V1, keep1, gv1), ("GSE74385", V2, keep2, 
                          p_perm=round(float(p_q[q]), 4),
                          ci_lo_pct=round(100 * lo, 2), ci_hi_pct=round(100 * hi, 2),
                          trend_obs=round(obs_stat, 4), trend_p=round(float(p_trend), 4)))
-    print(f"[{name}] è¶‹åŠ¿ {obs_stat:+.4f} vs é›¶ {trend.mean():+.4f}Â±{trend.std():.4f} | p={p_trend:.4f}")
+    print(f"[{name}] trend {obs_stat:+.4f} vs null {trend.mean():+.4f}+/-{trend.std():.4f} | p={p_trend:.4f}")
 
 df = pd.DataFrame(rows)
 df["p_BH"] = np.round(bh(pvals), 4)
 df.to_csv(os.path.join(OUT, "fig3_final_v3.csv"), index=False, encoding="utf-8-sig")
 print("\n" + df.to_string(index=False))
-print("\nå”¯ä¸€æƒå¨è¡¨: fig3_final_v3.csv")
+print("\nAuthoritative table: fig3_final_v3.csv")
 

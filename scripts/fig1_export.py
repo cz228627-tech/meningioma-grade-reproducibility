@@ -1,5 +1,5 @@
-﻿# -*- coding: utf-8 -*-
-"""Fig 1 æ•°æ®å¯¼å‡ºï¼šé˜Ÿåˆ—æž„æˆ + å‘çŽ°é˜Ÿåˆ—ï¼ˆRNA-seqï¼‰æ ·æœ¬çº§ QC"""
+# -*- coding: utf-8 -*-
+"""Fig 1 data export: cohort composition and sample-level QC (discovery cohort, RNA-seq)."""
 import sys, os, re, gzip
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 import numpy as np
@@ -37,7 +37,7 @@ qc = pd.DataFrame({
 })
 qc["flag"] = np.where((qc.detected_genes < 12000) | (qc.median_corr < 0.86), "low", "")
 qc.to_csv(os.path.join(OUT, "fig1_qc_rna.csv"), index=False, encoding="utf-8-sig")
-print("QC è¡¨:", qc.shape, "| æ ‡è®°ä¸ºä½Žè´¨é‡:", int((qc.flag == "low").sum()))
+print("QC table:", qc.shape, "| flagged low-quality:", int((qc.flag == "low").sum()))
 print(qc[qc.flag == "low"].to_string(index=False))
 
 comp = []
