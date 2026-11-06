@@ -1,0 +1,4 @@
+﻿analysis	trend	p	note
+unadjusted	0.4819	0.004	先前报告的 1,000 次置换
+within_batch_permutation	0.4819	0.031	零 +0.1687±0.1864
+grade_plus_batch_model	0.3954	0.031	零 +0.0023±0.2196

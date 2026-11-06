@@ -1,11 +1,11 @@
-# Meningioma grade-associated transcriptional reproducibility
+﻿# Meningioma grade-associated transcriptional reproducibility
 
-Code and derived data for: *Discovery effect magnitude and external directional reproducibility of WHO grade-associated transcriptional differences in meningioma*.
+Code and derived data for: *How Reproducible Are WHO Grade-Associated Transcriptional Differences in Meningioma? A Three-Cohort Cross-Platform Analysis*.
 
 ## What this repository contains
 
 - `scripts/` — analysis scripts in execution order
-- `data/` — frozen derived tables (not raw GEO matrices)
+- `data/` — frozen derived tables and result summaries (raw GEO matrices are not redistributed)
 - `docs/data_dictionary.md` — column definitions
 
 Raw expression matrices are **not** redistributed here. Download them from GEO:
@@ -16,7 +16,7 @@ Raw expression matrices are **not** redistributed here. Download them from GEO:
 | Validation 1 | GSE16581 | Affymetrix U133 Plus 2.0 (GPL570) |
 | Validation 2 | GSE74385 | Illumina HumanHT-12 v4 (GPL10558) |
 
-Platform annotations: GPL570 and GPL10558 annotation tables from GEO.
+Platform annotations: GPL570 and GPL10558 annotation tables from GEO. Gene sets: MSigDB v2023.2.Hs (`h.all`, symbols).
 
 Place the downloaded files in `data/raw/` and set `DATA_DIR`:
 
@@ -27,16 +27,35 @@ export DATA_DIR=/path/to/data
 ## Execution order
 
 ```bash
-python scripts/fig1_export.py        # cohort composition + per-sample QC
-python scripts/fig2_export.py        # discovery effect sizes (GSE16581-matched set)
-python scripts/fig3_frozen.py        # primary quintile analysis, 10,000 permutations
-python scripts/strata_save.py        # expression-stratified sensitivity (500 permutations)
-python scripts/batch_check_74385.py  # batch adjustment + within-batch permutation
-python scripts/strategy_bootstrap.py # exploratory ranking-strategy comparison
-python scripts/figs_final.py         # regenerates Figures 1-4 from frozen CSVs
+# primary analysis
+python scripts/fig1_export.py             # cohort composition + per-sample QC
+python scripts/fig2_export.py             # discovery effect sizes (GSE16581-matched set)
+python scripts/fig3_frozen.py             # primary quintile analysis, 10,000 permutations
+python scripts/strata_save.py             # expression-stratified sensitivity (500 permutations)
+python scripts/batch_check_74385.py       # batch adjustment + within-batch permutation
+python scripts/strategy_bootstrap.py      # exploratory ranking-strategy comparison
+
+# grade-definition sensitivity (WHO 2 vs 1)
+python scripts/g2only.py                  # G2-only quintiles, batch sensitivity (1,000 permutations)
+
+# proliferation-programme sensitivity
+python scripts/prog_excluded_gradient.py  # gradient after removing HALLMARK E2F/G2M genes
+python scripts/proliferation_test.py      # matched programme-vs-control comparison
+python scripts/proliferation_dir_balanced.py   # direction-balanced matching + within-set correlation
+python scripts/proliferation_geneset_null.py   # gene-set level null distribution
+
+# figures
+python scripts/figs_final.py              # regenerates Figures 1-4 from frozen CSVs
 ```
 
-`fig3_frozen.py` takes roughly 25-30 minutes (10,000 permutations x 2 cohorts).
+`fig3_frozen.py` takes roughly 25-30 minutes (10,000 permutations x 2 cohorts); all other scripts finish within minutes.
+
+## Verification
+
+`scripts/` and `data/` correspond one-to-one: each script writes the result file that the manuscript cites.
+`data/fig3_reproduced.csv` is a re-run of the primary analysis published alongside `fig3_final_v3.csv` for direct comparison;
+the two files are identical in all 120 numeric cells.
+
 
 ## Reproducibility notes
 
