@@ -40,11 +40,13 @@ python scripts/g2only.py                  # G2-only quintiles, batch sensitivity
 
 # proliferation-programme sensitivity
 python scripts/prog_excluded_gradient.py  # gradient after removing HALLMARK E2F/G2M genes
+python scripts/both_cohorts.py           # simultaneous concordance across both cohorts (10,000 permutations)
 python scripts/proliferation_test.py      # matched programme-vs-control comparison
 python scripts/proliferation_dir_balanced.py   # direction-balanced matching + within-set correlation
 python scripts/proliferation_geneset_null.py   # gene-set level null distribution
 
 # figures
+python scripts/fig3_three_panel.py         # three-panel Figure 3 including simultaneous concordance
 python scripts/figs_final.py              # regenerates Figures 1-4 from frozen CSVs
 ```
 
